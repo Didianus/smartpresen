@@ -16,11 +16,15 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   title: "Absensi Karyawan — Sistem Manajemen Kehadiran",
-  description: "Website absensi karyawan modern dengan kartu RFID/NFC/QR, dashboard analitik, dan cetak kartu karyawan.",
+  description:
+    "Website absensi karyawan modern dengan kartu RFID/NFC/QR, dashboard analitik, dan cetak kartu karyawan.",
   keywords: ["absensi", "karyawan", "kehadiran", "RFID", "QR Code", "HR"],
   authors: [{ name: "Absensi Karyawan" }],
+
   icons: {
-    icon: "https://z-cdn.chatglm.cn/z-ai/static/logo.svg",
+    icon: "/logo1.png",
+    shortcut: "/logo1.png",
+    apple: "/logo1.png",
   },
 };
 
