@@ -1,0 +1,114 @@
+// ===================================================================
+// Website Absensi Karyawan - Prisma Schema
+// Database: SQLite (adapted from MySQL spec)
+// Tables: Users, Karyawan, KartuKaryawan, Absensi, LogAktivitas
+// ===================================================================
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ------------------------------------------------------------------
+// Users — akun autentikasi (Admin / User)
+// ------------------------------------------------------------------
+model User {
+  id          String   @id @default(cuid())
+  namaLengkap String
+  email       String   @unique
+  password    String // bcrypt hash
+  role        String   @default("user") // "admin" | "user"
+  status      String   @default("aktif") // "aktif" | "nonaktif"
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  karyawan    Karyawan?
+  logs        LogAktivitas[]
+}
+
+// ------------------------------------------------------------------
+// Karyawan — data profil karyawan, relasi 1-1 ke User
+// ------------------------------------------------------------------
+model Karyawan {
+  id          String   @id @default(cuid())
+  nik         String   @unique // Nomor Induk Karyawan
+  nama        String
+  jabatan     String
+  divisi      String
+  alamat      String   @default("")
+  noTelepon   String   @default("")
+  email       String   @default("")
+  foto        String?  // URL / data URL foto
+  status      String   @default("aktif") // "aktif" | "nonaktif" | "cuti"
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  userId      String   @unique
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  kartu       KartuKaryawan?
+  absensi     Absensi[]
+}
+
+// ------------------------------------------------------------------
+// KartuKaryawan — kartu RFID/NFC/QR unik per karyawan
+// ------------------------------------------------------------------
+model KartuKaryawan {
+  id           String   @id @default(cuid())
+  idKartu      String   @unique // contoh: EMP-2026-0001
+  uid          String   @unique // UID RFID/NFC atau QR Code payload
+  jenis        String   @default("rfid") // "rfid" | "nfc" | "barcode" | "qrcode"
+  tanggalBuat  DateTime @default(now())
+  masaBerlaku  DateTime?
+  status       String   @default("aktif") // "aktif" | "nonaktif" | "hilang"
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  karyawanId   String   @unique
+  karyawan     Karyawan @relation(fields: [karyawanId], references: [id], onDelete: Cascade)
+}
+
+// ------------------------------------------------------------------
+// Absensi — catatan kehadiran harian per karyawan
+// ------------------------------------------------------------------
+model Absensi {
+  id             String    @id @default(cuid())
+  nik            String
+  nama           String
+  tanggal        DateTime  @default(now())
+  jamMasuk       DateTime?
+  jamPulang      DateTime?
+  status         String    @default("hadir") // "hadir" | "terlambat" | "izin" | "sakit" | "alpha"
+  lokasi         String    @default("Kantor Pusat")
+  foto           String?   // bukti foto absen (opsional)
+  keterangan     String    @default("")
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  karyawanId     String?
+  karyawan       Karyawan? @relation(fields: [karyawanId], references: [id], onDelete: SetNull)
+
+  @@unique([karyawanId, tanggal])
+}
+
+// ------------------------------------------------------------------
+// LogAktivitas — audit trail seluruh aktivitas sistem
+// ------------------------------------------------------------------
+model LogAktivitas {
+  id        String   @id @default(cuid())
+  userId    String?
+  user      User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+  namaUser  String   @default("System")
+  aksi      String   // "login" | "logout" | "registrasi" | "create" | "update" | "delete" | "absen_masuk" | "absen_pulang"
+  modul     String   @default("") // "auth" | "karyawan" | "kartu" | "absensi" | "user" | "laporan"
+  detail    String   @default("")
+  ip        String   @default("")
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+  @@index([createdAt])
+}
